@@ -2,9 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import http from "http"; 
+import http from "http";
 
-import { initializeSocket } from "./lib/socket.js"; 
+import { initializeSocket } from "./lib/socket.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -20,19 +20,19 @@ import messageRouter from "./routes/message.route.js";
 dotenv.config();
 const app = express();
 
-const PORT = process.env.PORT || 5001; 
+const PORT = process.env.PORT || 5001;
 
 const httpServer = http.createServer(app);
 
-const io = initializeSocket(httpServer); 
-app.set('socketio', io); 
+const io = initializeSocket(httpServer);
+app.set("socketio", io);
 
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ limit: "15mb", extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "https://noty-mocha.vercel.app"],
     credentials: true,
   })
 );
@@ -46,8 +46,7 @@ app.use("/api/events", calendarRouter);
 app.use("/api/calendar", calendarRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/ai", aiRouter);
-app.get('/api/test', (req, res) => res.json({ ok: true }));
-
+app.get("/api/test", (req, res) => res.json({ ok: true }));
 
 httpServer.listen(PORT, () => {
   console.log("Server is running on PORT:" + PORT);
