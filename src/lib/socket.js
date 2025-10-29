@@ -4,18 +4,19 @@ import Message from "../models/message.model.js";
 export const initializeSocket = (httpServer) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: ["http://localhost:5173", process.env.FRONTEND_URL],
+      origin: ["https://noty-mocha.vercel.app", "http://localhost:5173"],
       methods: ["GET", "POST"],
       credentials: true,
     },
+    transports: ["websocket", "polling"],
   });
 
   io.on("connection", (socket) => {
-    console.log(`User connected via WebSocket: ${socket.id}`);
+    console.log(`✅ User connected via WebSocket: ${socket.id}`);
 
     socket.on("join_project", (projectId) => {
       socket.join(projectId);
-      console.log(`User ${socket.id} joined project room: ${projectId}`);
+      console.log(`📂 User ${socket.id} joined project room: ${projectId}`);
     });
 
     socket.on("send_message", async (data) => {
@@ -35,15 +36,15 @@ export const initializeSocket = (httpServer) => {
 
         socket.to(data.projectId).emit("receive_message", savedMessage);
       } catch (error) {
-        console.error("Error saving message:", error);
+        console.error("❌ Error saving message:", error);
       }
     });
 
     socket.on("disconnect", () => {
-      console.log(`User disconnected: ${socket.id}`);
+      console.log(`❌ User disconnected: ${socket.id}`);
     });
   });
 
-  console.log("Socket.IO initialized successfully!");
+  console.log("🚀 Socket.IO initialized successfully!");
   return io;
 };
