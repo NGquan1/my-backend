@@ -9,17 +9,30 @@ export const initializeSocket = (httpServer) => {
       credentials: true,
     },
     transports: ["websocket", "polling"],
+    path: "/socket.io/",
+  });
+
+  console.log("🚀 [Socket] Initialized. Waiting for connections...");
+
+  io.engine.on("connection_error", (err) => {
+    console.error("❌ [Socket.IO Engine Error]");
+    console.error("Code:", err.code);
+    console.error("Message:", err.message);
+    console.error("Context:", err.context);
   });
 
   io.on("connection", (socket) => {
-    console.log(`✅ User connected via WebSocket: ${socket.id}`);
+    console.log(`✅ [Socket] Connected: ${socket.id}`);
+    console.log("Handshake headers:", socket.handshake.headers.origin);
+    console.log("Transport:", socket.conn.transport.name);
 
     socket.on("join_project", (projectId) => {
       socket.join(projectId);
-      console.log(`📂 User ${socket.id} joined project room: ${projectId}`);
+      console.log(`📂 [Socket] ${socket.id} joined project room: ${projectId}`);
     });
 
     socket.on("send_message", async (data) => {
+      console.log(`📨 [Socket] send_message from ${data.senderId}`);
       try {
         const newMessage = new Message({
           text: data.text,
@@ -28,7 +41,6 @@ export const initializeSocket = (httpServer) => {
         });
 
         let savedMessage = await newMessage.save();
-
         savedMessage = await savedMessage.populate(
           "sender",
           "fullName profilePic"
@@ -36,15 +48,15 @@ export const initializeSocket = (httpServer) => {
 
         socket.to(data.projectId).emit("receive_message", savedMessage);
       } catch (error) {
-        console.error("❌ Error saving message:", error);
+        console.error("❌ [Socket] Error saving message:", error);
       }
     });
 
-    socket.on("disconnect", () => {
-      console.log(`❌ User disconnected: ${socket.id}`);
+    socket.on("disconnect", (reason) => {
+      console.log(`❌ [Socket] Disconnected: ${socket.id}`);
+      console.log("Reason:", reason);
     });
   });
 
-  console.log("🚀 Socket.IO initialized successfully!");
   return io;
 };
