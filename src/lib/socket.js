@@ -11,15 +11,28 @@ export const initializeSocket = (httpServer) => {
     transports: ["websocket", "polling"],
   });
 
+  console.log("🚀 [Socket.IO] Initialized and waiting for connections...");
+
+  io.engine.on("connection_error", (err) => {
+    console.error("❌ [Engine Error] code:", err.code);
+    console.error("message:", err.message);
+    console.error("context:", err.context);
+  });
+
   io.on("connection", (socket) => {
-    console.log(`✅ User connected via WebSocket: ${socket.id}`);
+    console.log(`✅ [Socket.IO] User connected: ${socket.id}`);
+    console.log("🌍 Origin:", socket.handshake.headers.origin);
+    console.log("📡 Transport:", socket.conn.transport.name);
 
     socket.on("join_project", (projectId) => {
       socket.join(projectId);
-      console.log(`📂 User ${socket.id} joined project room: ${projectId}`);
+      console.log(
+        `📂 [Socket.IO] ${socket.id} joined project room: ${projectId}`
+      );
     });
 
     socket.on("send_message", async (data) => {
+      console.log("📨 [Socket.IO] Received send_message event:", data);
       try {
         const newMessage = new Message({
           text: data.text,
@@ -34,17 +47,19 @@ export const initializeSocket = (httpServer) => {
           "fullName profilePic"
         );
 
+        console.log("✅ [Socket.IO] Message saved and broadcasting...");
         socket.to(data.projectId).emit("receive_message", savedMessage);
       } catch (error) {
-        console.error("❌ Error saving message:", error);
+        console.error("❌ [Socket.IO] Error saving message:", error);
       }
     });
 
-    socket.on("disconnect", () => {
-      console.log(`❌ User disconnected: ${socket.id}`);
+    socket.on("disconnect", (reason) => {
+      console.warn(
+        `⚠️ [Socket.IO] User disconnected: ${socket.id}, reason: ${reason}`
+      );
     });
   });
 
-  console.log("🚀 Socket.IO initialized successfully!");
   return io;
 };
