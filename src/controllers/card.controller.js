@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Column from "../models/column.model.js";
 
 export const moveCard = async (req, res) => {
@@ -12,62 +13,61 @@ export const moveCard = async (req, res) => {
   });
 
   if (!fromColumnId || !toColumnId) {
-    console.warn("[API][moveCard] missing column IDs");
     return res.status(400).json({ message: "Missing column IDs" });
   }
 
   try {
-    const fromCol = await Column.findById(fromColumnId);
-    const toCol = await Column.findById(toColumnId);
-
-    console.log("[API][moveCard] found columns:", {
-      fromColExists: !!fromCol,
-      toColExists: !!toCol,
-      fromColCardsBefore: fromCol
-        ? fromCol.cards.map((c) => c._id.toString())
-        : null,
-      toColCardsBefore: toCol ? toCol.cards.map((c) => c._id.toString()) : null,
-    });
+    // 🔍 Tìm cả 2 column
+    const [fromCol, toCol] = await Promise.all([
+      Column.findById(fromColumnId),
+      Column.findById(toColumnId),
+    ]);
 
     if (!fromCol || !toCol) {
-      console.warn("[API][moveCard] column not found");
       return res.status(404).json({ message: "Column not found" });
     }
 
+    // 🧩 Tìm card trong fromCol
     const cardIndex = fromCol.cards.findIndex(
       (c) => c._id.toString() === cardId
     );
     if (cardIndex === -1) {
-      console.warn("[API][moveCard] card not found in source column", {
-        cardId,
-      });
       return res
         .status(404)
         .json({ message: "Card not found in source column" });
     }
 
-    // Remove card from source
+    // ✂️ Bỏ card khỏi cột gốc
     const [card] = fromCol.cards.splice(cardIndex, 1);
     await fromCol.save();
 
-    // Insert to target at specified index (clamp index)
+    // 🔄 Clone card để tránh lỗi duplicate _id khi push sang toCol
+    const newCard = {
+      ...card.toObject(),
+      _id: new mongoose.Types.ObjectId(), // tạo id mới
+    };
+
+    // 📥 Thêm vào cột đích theo vị trí
     const insertIndex =
       typeof toCardIndex === "number" && toCardIndex >= 0
         ? Math.min(toCardIndex, toCol.cards.length)
         : toCol.cards.length;
 
-    toCol.cards.splice(insertIndex, 0, card);
+    toCol.cards.splice(insertIndex, 0, newCard);
     await toCol.save();
 
-    console.log("[API][moveCard] moved card successfully. After state:", {
+    console.log("[API][moveCard] ✅ Card moved successfully", {
       fromColCardsAfter: fromCol.cards.map((c) => c._id.toString()),
       toColCardsAfter: toCol.cards.map((c) => c._id.toString()),
-      insertIndex,
     });
 
-    return res.status(200).json({ message: "Card moved successfully", card });
+    return res.status(200).json({
+      message: "Card moved successfully",
+      card: newCard,
+      toColumnId,
+    });
   } catch (err) {
-    console.error("[API][moveCard] Move card failed:", err);
+    console.error("[API][moveCard] ❌ Error:", err);
     return res
       .status(500)
       .json({ message: "Internal server error", error: err.message });
