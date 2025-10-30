@@ -2,7 +2,7 @@ import Column from "../models/column.model.js";
 
 export const moveCard = async (req, res) => {
   const { cardId } = req.params;
-  const { fromColumnId, toColumnId } = req.body;
+  const { fromColumnId, toColumnId, toCardIndex } = req.body;
 
   if (!fromColumnId || !toColumnId)
     return res.status(400).json({ message: "Missing column IDs" });
@@ -20,13 +20,20 @@ export const moveCard = async (req, res) => {
         .status(404)
         .json({ message: "Card not found in source column" });
 
+    // ✅ Lấy card ra
     const [card] = fromCol.cards.splice(cardIndex, 1);
     await fromCol.save();
 
+    // ✅ Thêm card vào column mới đúng vị trí
     const toCol = await Column.findById(toColumnId);
     if (!toCol) return res.status(404).json({ message: "To column not found" });
 
-    toCol.cards.push(card);
+    const insertIndex =
+      typeof toCardIndex === "number" && toCardIndex >= 0
+        ? Math.min(toCardIndex, toCol.cards.length)
+        : toCol.cards.length;
+
+    toCol.cards.splice(insertIndex, 0, card);
     await toCol.save();
 
     res.status(200).json({ message: "Card moved successfully", card });
