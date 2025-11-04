@@ -47,7 +47,6 @@ export const moveCard = async (req, res) => {
       _id: new mongoose.Types.ObjectId(), // tạo id mới
     };
 
-    // 📥 Thêm vào cột đích theo vị trí
     const insertIndex =
       typeof toCardIndex === "number" && toCardIndex >= 0
         ? Math.min(toCardIndex, toCol.cards.length)
