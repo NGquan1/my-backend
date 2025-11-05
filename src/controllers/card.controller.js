@@ -72,3 +72,20 @@ export const moveCard = async (req, res) => {
       .json({ message: "Internal server error", error: err.message });
   }
 };
+
+export const reorderCards = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { fromIndex, toIndex } = req.body;
+    const column = await Column.findById(columnId);
+    if (!column) return res.status(404).json({ error: "Column not found" });
+
+    const [card] = column.cards.splice(fromIndex, 1);
+    column.cards.splice(toIndex, 0, card);
+    await column.save();
+
+    res.json({ message: "Cards reordered successfully", cards: column.cards });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
