@@ -59,11 +59,19 @@ export const deleteProject = async (req, res) => {
       return res.status(400).json({ error: "Invalid project ID format" });
     }
 
-    const project = await Project.findByIdAndDelete(id);
+    const project = await Project.findById(id);
     if (!project) {
       return res.status(404).json({ error: "Project not found" });
     }
 
+    // Check if the user is the owner of the project
+    if (!project.owner.equals(req.user._id)) {
+      return res
+        .status(403)
+        .json({ error: "Only project owner can delete the project" });
+    }
+
+    await Project.findByIdAndDelete(id);
     await Column.deleteMany({ project: id });
     await Note.deleteMany({ project: id });
 
