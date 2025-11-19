@@ -16,6 +16,7 @@ import calendarRouter from "./routes/calendar.route.js";
 import cardRoutes from "./routes/card.route.js";
 import aiRouter from "./routes/ai.route.js";
 import messageRouter from "./routes/message.route.js";
+import presenceRouter from "./routes/presence.route.js";
 
 dotenv.config();
 const app = express();
@@ -46,6 +47,7 @@ app.use("/api/events", calendarRouter);
 app.use("/api/calendar", calendarRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/ai", aiRouter);
+app.use("/api/presence", presenceRouter);
 app.get("/api/test", (req, res) => res.json({ ok: true }));
 
 httpServer.listen(PORT, () => {
