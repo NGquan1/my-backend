@@ -17,7 +17,6 @@ export const moveCard = async (req, res) => {
   }
 
   try {
-    // 🔍 Tìm cả 2 column
     const [fromCol, toCol] = await Promise.all([
       Column.findById(fromColumnId),
       Column.findById(toColumnId),
@@ -27,7 +26,6 @@ export const moveCard = async (req, res) => {
       return res.status(404).json({ message: "Column not found" });
     }
 
-    // 🧩 Tìm card trong fromCol
     const cardIndex = fromCol.cards.findIndex(
       (c) => c._id.toString() === cardId
     );
@@ -37,14 +35,12 @@ export const moveCard = async (req, res) => {
         .json({ message: "Card not found in source column" });
     }
 
-    // ✂️ Bỏ card khỏi cột gốc
     const [card] = fromCol.cards.splice(cardIndex, 1);
     await fromCol.save();
 
-    // 🔄 Clone card để tránh lỗi duplicate _id khi push sang toCol
     const newCard = {
       ...card.toObject(),
-      _id: new mongoose.Types.ObjectId(), // tạo id mới
+      _id: new mongoose.Types.ObjectId(),
     };
 
     const insertIndex =
